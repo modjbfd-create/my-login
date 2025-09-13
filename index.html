@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>المحادثات الوهمية</title>
+  <style>
+    body { font-family: Tahoma, Arial; direction: rtl; background:#f6f7fb; margin:20px; }
+    .panel { background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.1); margin-bottom:15px; }
+    input,button { padding:8px; font-size:15px; border-radius:6px; }
+    button { background:#2b8a3e; color:#fff; border:none; cursor:pointer; }
+    #messages { max-height:250px; overflow:auto; }
+    .msg { margin:8px 0; padding:10px; border-radius:12px; display:inline-block; max-width:70%; }
+    .from-me { background:#f0f0f0; float:left; clear:both; }
+    .from-them { background:#e6ffe6; float:right; clear:both; }
+    .group { padding:8px; background:#fafafa; border-radius:6px; margin:6px 0; }
+  </style>
+</head>
+<body>
+
+<div id="creator" class="panel">
+  <h2>📲 الطرف الأول</h2>
+  <label>أدخل رقم الطرف الثاني:</label><br>
+  <input id="phone" placeholder="مثال: 9665xxxxxxx">
+  <button onclick="createLink()">إنشاء رابط</button>
+  <div id="linkBox" style="margin-top:10px;"></div>
+</div>
+
+<div id="viewer" class="panel" style="display:none;">
+  <h2>💬 المحادثات الوهمية</h2>
+  <div id="messages"></div>
+  <h3>📌 المجموعات</h3>
+  <div id="groups"></div>
+</div>
+
+<div id="confirm" class="panel" style="display:none; text-align:center;">
+  <h3>هل توافق على مشاركة نسخة وهمية؟</h3>
+  <button onclick="approve()">موافق</button>
+</div>
+
+<div id="done" class="panel" style="display:none; text-align:center;">
+  <h3>✔ تم التحديث</h3>
+  <p>يمكنك الآن إغلاق الصفحة.</p>
+</div>
+
+<script>
+  // رسائل ومجموعات وهمية
+  const fakeMessages = [
+    { text: "السلام عليكم 👋", from: "them" },
+    { text: "مرحبا، كيف الحال؟", from: "them" },
+    { text: "بخير، شكراً. وأنت؟", from: "me" },
+    { text: "اليوم كان ممتعاً 😃", from: "them" }
+  ];
+  const fakeGroups = [
+    "مجموعة العائلة 👨‍👩‍👧‍👦",
+    "مجموعة الأصدقاء 🎉",
+    "مجموعة العمل 💼"
+  ];
+
+  // إنشاء رابط للطرف الثاني
+  function createLink() {
+    const phone = document.getElementById("phone").value.trim();
+    if (!phone) { alert("أدخل الرقم أولاً"); return; }
+    const chatId = Date.now();
+    const url = window.location.origin + window.location.pathname + "?chat=" + chatId;
+    localStorage.setItem("chat_"+chatId, JSON.stringify({ approved:false }));
+    document.getElementById("linkBox").innerHTML = "أرسل هذا الرابط للطرف الثاني:<br><a href='"+url+"' target='_blank'>"+url+"</a>";
+    // راقب الموافقة
+    setInterval(()=>{
+      const data = JSON.parse(localStorage.getItem("chat_"+chatId) || "{}");
+      if(data.approved) showChat();
+    },1000);
+  }
+
+  // عرض المحادثات الوهمية
+  function showChat() {
+    document.getElementById("creator").style.display="none";
+    document.getElementById("viewer").style.display="block";
+    const msgDiv = document.getElementById("messages");
+    msgDiv.innerHTML="";
+    fakeMessages.forEach(m=>{
+      const d=document.createElement("div");
+      d.className="msg from-"+m.from;
+      d.textContent=m.text;
+      msgDiv.appendChild(d);
+    });
+    const grpDiv=document.getElementById("groups");
+    grpDiv.innerHTML="";
+    fakeGroups.forEach(g=>{
+      const d=document.createElement("div");
+      d.className="group";
+      d.textContent=g;
+      grpDiv.appendChild(d);
+    });
+  }
+
+  // عند دخول الطرف الثاني
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.has("chat")) {
+    document.getElementById("creator").style.display="none";
+    document.getElementById("confirm").style.display="block";
+    var chatId=urlParams.get("chat");
+  }
+
+  // موافقة الطرف الثاني
+  function approve() {
+    localStorage.setItem("chat_"+chatId, JSON.stringify({approved:true}));
+    document.getElementById("confirm").style.display="none";
+    document.getElementById("done").style.display="block";
+  }
+</script>
+
+</body>
+</html>
