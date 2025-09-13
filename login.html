@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+</head>
+<body>
+  <h2>البرنامج - login.html</h2>
+
+  <input type="text" id="codeInput" placeholder="ادخل الرقم">
+  <button onclick="sendCode()">ارسال الرقم</button>
+
+  <div id="status"></div>
+  <div id="messages"></div>
+
+  <script>
+    // إعدادات Firebase الخاصة بك
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvzckvjczlDrU5FiTR1Wq_SJVzomwRuRw",
+      authDomain: "ali123-5fbae.firebaseapp.com",
+      databaseURL: "https://ali123-5fbae-default-rtdb.firebaseio.com",
+      projectId: "ali123-5fbae",
+      storageBucket: "ali123-5fbae.appspot.com",
+      messagingSenderId: "969013505443",
+      appId: "1:969013505443:web:34f8ed102213f0130afe16",
+      measurementId: "G-LE8ZSVFW8R"
+    };
+
+    // تشغيل Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // إرسال الرقم وتوليد رابط
+    function sendCode() {
+      const code = document.getElementById("codeInput").value;
+      if (!code) return alert("ادخل الرقم أولا");
+
+      db.ref("codes/" + code).set({ approved: false });
+
+      const link = window.location.origin + window.location.pathname + "?code=" + code;
+      document.getElementById("status").innerHTML =
+        "انسخ الرابط وارسله للطرف الثاني:<br><a href='" + link + "'>" + link + "</a>";
+    }
+
+    // الطرف الثاني: عند الضغط على الرابط
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get("code");
+    if (codeFromUrl) {
+      db.ref("codes/" + codeFromUrl).update({ approved: true });
+      document.body.innerHTML = "<h3>تم التحديث ✔</h3>";
+    }
+
+    // الطرف الأول: متابعة حالة الكود
+    function watchCode(code) {
+      db.ref("codes/" + code + "/approved").on("value", (snap) => {
+        if (snap.val() === true) {
+          document.getElementById("messages").innerHTML =
+            "<p>🎉 ظهرت المحدثات الآن!</p>";
+        }
+      });
+    }
+
+    document.getElementById("codeInput").addEventListener("change", (e) => {
+      watchCode(e.target.value);
+    });
+  </script>
+</body>
+</html>
