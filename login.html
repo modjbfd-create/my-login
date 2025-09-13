@@ -1,70 +1,95 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
-</head>
-<body>
-  <h2>البرنامج - login.html</h2>
+  <title>Login Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <input type="text" id="codeInput" placeholder="ادخل الرقم">
-  <button onclick="sendCode()">ارسال الرقم</button>
+  <!-- Firebase -->
+  <script type="module">
+    // Import Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push } 
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  <div id="status"></div>
-  <div id="messages"></div>
-
-  <script>
-    // إعدادات Firebase الخاصة بك
+    // ضع هنا معلومات مشروعك من Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDvzckvjczlDrU5FiTR1Wq_SJVzomwRuRw",
       authDomain: "ali123-5fbae.firebaseapp.com",
-      databaseURL: "https://ali123-5fbae-default-rtdb.firebaseio.com",
       projectId: "ali123-5fbae",
       storageBucket: "ali123-5fbae.appspot.com",
       messagingSenderId: "969013505443",
       appId: "1:969013505443:web:34f8ed102213f0130afe16",
-      measurementId: "G-LE8ZSVFW8R"
+      measurementId: "G-LE8ZSVFW8R",
+      databaseURL: "https://ali123-5fbae-default-rtdb.firebaseio.com/"
     };
 
     // تشغيل Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    // إرسال الرقم وتوليد رابط
-    function sendCode() {
-      const code = document.getElementById("codeInput").value;
-      if (!code) return alert("ادخل الرقم أولا");
-
-      db.ref("codes/" + code).set({ approved: false });
-
-      const link = window.location.origin + window.location.pathname + "?code=" + code;
-      document.getElementById("status").innerHTML =
-        "انسخ الرابط وارسله للطرف الثاني:<br><a href='" + link + "'>" + link + "</a>";
-    }
-
-    // الطرف الثاني: عند الضغط على الرابط
+    // التحقق إذا الرابط فيه user
     const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get("code");
-    if (codeFromUrl) {
-      db.ref("codes/" + codeFromUrl).update({ approved: true });
-      document.body.innerHTML = "<h3>تم التحديث ✔</h3>";
-    }
+    const user = urlParams.get("user");
 
-    // الطرف الأول: متابعة حالة الكود
-    function watchCode(code) {
-      db.ref("codes/" + code + "/approved").on("value", (snap) => {
-        if (snap.val() === true) {
-          document.getElementById("messages").innerHTML =
-            "<p>🎉 ظهرت المحدثات الآن!</p>";
+    window.onload = () => {
+      if (user) {
+        document.getElementById("status").innerText = "✅ تم التحديث بواسطة: " + user;
+        // تسجيل موافقة في قاعدة البيانات
+        const updatesRef = ref(db, "updates");
+        const newUpdate = push(updatesRef);
+        set(newUpdate, {
+          user: user,
+          time: new Date().toLocaleString()
+        });
+      }
+
+      // جلب التحديثات للطرف الأول
+      const updatesRef = ref(db, "updates");
+      onValue(updatesRef, (snapshot) => {
+        const data = snapshot.val();
+        let chatBox = document.getElementById("chat");
+        chatBox.innerHTML = "";
+        for (let key in data) {
+          let item = data[key];
+          let div = document.createElement("div");
+          div.innerText = item.user + " ✅ " + item.time;
+          chatBox.appendChild(div);
         }
       });
-    }
+    };
 
-    document.getElementById("codeInput").addEventListener("change", (e) => {
-      watchCode(e.target.value);
-    });
+    // إرسال رابط للطرف الثاني
+    window.sendLink = () => {
+      const phone = document.getElementById("phone").value;
+      if (!phone) {
+        alert("اكتب رقم الشخص أولا");
+        return;
+      }
+      const link = window.location.href.split("?")[0] + "?user=" + encodeURIComponent(phone);
+      document.getElementById("generatedLink").innerHTML =
+        "📎 الرابط: <a href='" + link + "' target='_blank'>" + link + "</a>";
+    };
   </script>
+
+  <style>
+    body { font-family: Tahoma, sans-serif; text-align: center; padding: 20px; }
+    #chat { border: 1px solid #ccc; padding: 10px; margin-top: 15px; min-height: 100px; }
+    input, button { padding: 8px; margin: 5px; }
+    a { color: blue; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h2>📲 برنامج Login Chat</h2>
+
+  <div>
+    <input type="text" id="phone" placeholder="أدخل رقم الطرف الثاني">
+    <button onclick="sendLink()">توليد الرابط</button>
+  </div>
+
+  <div id="generatedLink"></div>
+  <hr>
+  <h3 id="status"></h3>
+  <div id="chat"></div>
 </body>
 </html>
